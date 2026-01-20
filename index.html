@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Courier Range Extractor (Filtered)</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; padding: 40px; color: #333; line-height: 1.6; }
+        .container { max-width: 900px; margin: auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
+        h2 { color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 10px; }
+        textarea { width: 100%; height: 180px; padding: 15px; border: 1px solid #ddd; border-radius: 8px; font-family: monospace; box-sizing: border-box; background: #fafafa; }
+        .btn-container { margin: 20px 0; }
+        button { background-color: #3498db; color: white; border: none; padding: 12px 25px; border-radius: 6px; cursor: pointer; font-size: 16px; transition: 0.3s; }
+        button:hover { background-color: #2980b9; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { text-align: left; padding: 12px; border-bottom: 1px solid #eee; }
+        th { background-color: #f8f9fa; color: #7f8c8d; text-transform: uppercase; font-size: 13px; }
+        .prefix-badge { background: #3498db; color: white; padding: 2px 8px; border-radius: 4px; font-weight: bold; margin-right: 5px; }
+        .status-msg { font-size: 0.9em; color: #7f8c8d; margin-top: 10px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Smart Range Extractor</h2>
+    <p>Filters out failed requests and groups successful consignment numbers into ranges.</p>
+    
+    <textarea id="inputText" placeholder="Paste your raw table data here..."></textarea>
+    
+    <div class="btn-container">
+        <button onclick="processData()">Process Successful Only</button>
+    </div>
+
+    <div id="resultsArea" style="display:none;">
+        <div class="status-msg" id="stats"></div>
+        <table>
+            <thead>
+                <tr>
+                    <th>Consignment Range / Number</th>
+                    <th>Count</th>
+                </tr>
+            </thead>
+            <tbody id="resultBody"></tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    function processData() {
+        const text = document.getElementById('inputText').value;
+        const resultBody = document.getElementById('resultBody');
+        const resultsArea = document.getElementById('resultsArea');
+        const stats = document.getElementById('stats');
+        
+        // 1. Identify rows and remove those without "SUCCESS"
+        // Splits by newline to handle data as individual rows
+        const rows = text.split(/\n/);
+        const groups = {};
+        let totalFound = 0;
+        let successfulFound = 0;
+
+        rows.forEach(line => {
+            // Find tracking numbers: starts with R, V, or D followed by 4+ digits
+            const trackingMatch = line.match(/\b([RVD])(\d{4,})\b/);
+            
+            if (trackingMatch) {
+                totalFound++;
+                // Only proceed if "SUCCESS" is found in the same row
+                if (line.toUpperCase().includes("SUCCESS")) {
+                    successfulFound++;
+                    const prefix = trackingMatch[1];
+                    const numPart = trackingMatch[2];
+                    const num = parseInt(numPart, 10);
+                    const originalLength = numPart.length;
+
+                    if (!groups[prefix]) groups[prefix] = [];
+                    groups[prefix].push({ num: num, len: originalLength });
+                }
+            }
+        });
+
+        // UI Cleanup
+        resultBody.innerHTML = '';
+        if (totalFound === 0) {
+            alert("No valid consignment numbers found (R, V, or D).");
+            return;
+        }
+
+        stats.innerText = `Total identified: ${totalFound} | Successful: ${successfulFound} | Failed/Removed: ${totalFound - successfulFound}`;
+
+        // 2. Process each prefix group for ranges
+        Object.keys(groups).sort().forEach(prefix => {
+            let items = groups[prefix].sort((a, b) => a.num - b.num);
+            
+            // Remove duplicates
+            items = items.filter((v, i, a) => a.findIndex(t => t.num === v.num) === i);
+
+            let i = 0;
+            while (i < items.length) {
+                let start = i;
+                // Detect continuous range (increments of 1)
+                while (i + 1 < items.length && items[i + 1].num === items[i].num + 1) {
+                    i++;
+                }
+
+                const row = document.createElement('tr');
+                const rangeCell = document.createElement('td');
+                const countCell = document.createElement('td');
+
+                if (start === i) {
+                    // Single number
+                    const val = items[start].num.toString().padStart(items[start].len, '0');
+                    rangeCell.innerHTML = `<span class="prefix-badge">${prefix}</span>${val}`;
+                    countCell.innerText = "1";
+                } else {
+                    // Multi-number range
+                    const startVal = items[start].num.toString().padStart(items[start].len, '0');
+                    const endVal = items[i].num.toString().padStart(items[i].len, '0');
+                    rangeCell.innerHTML = `<span class="prefix-badge">${prefix}</span>${startVal} — <span class="prefix-badge">${prefix}</span>${endVal}`;
+                    countCell.innerText = (i - start + 1);
+                }
+
+                row.appendChild(rangeCell);
+                row.appendChild(countCell);
+                resultBody.appendChild(row);
+                i++;
+            }
+        });
+
+        resultsArea.style.display = 'block';
+    }
+</script>
+
+</body>
+</html>
