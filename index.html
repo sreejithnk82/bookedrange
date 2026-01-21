@@ -140,7 +140,7 @@
             const batch = sortedNumbers.slice(i, i + 100);
             const batchNum = Math.floor(i / 100) + 1;
             commaHTML += `<span class="batch-header">Batch ${batchNum} (${i + 1} - ${Math.min(i + 100, sortedNumbers.length)})</span>`;
-            commaHTML += batch.join(", ");
+            commaHTML += batch.join(",");
             commaHTML += "\n------------------------------------------------------------\n";
         }
         commaList.innerHTML = commaHTML;
