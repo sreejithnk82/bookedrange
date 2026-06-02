@@ -47,7 +47,7 @@
             <tbody id="resultBody"></tbody>
         </table>
 
-        <h2>Individual List (Batches of 100)</h2>
+        <h2>Individual List (Batches of 25)</h2>
         <div id="commaList" class="list-area"></div>
     </div>
 </div>
@@ -134,12 +134,12 @@
             }
         });
 
-        // 3. Generate Comma Separated List in batches of 100
+        // 3. Generate Comma Separated List in batches of 25
         let commaHTML = "";
-        for (let i = 0; i < sortedNumbers.length; i += 100) {
-            const batch = sortedNumbers.slice(i, i + 100);
-            const batchNum = Math.floor(i / 100) + 1;
-            commaHTML += `<span class="batch-header">Batch ${batchNum} (${i + 1} - ${Math.min(i + 100, sortedNumbers.length)})</span>`;
+        for (let i = 0; i < sortedNumbers.length; i += 25) {
+            const batch = sortedNumbers.slice(i, i + 25);
+            const batchNum = Math.floor(i / 25) + 1;
+            commaHTML += `<span class="batch-header">Batch ${batchNum} (${i + 1} - ${Math.min(i + 25, sortedNumbers.length)})</span>`;
             commaHTML += batch.join(",");
             commaHTML += "\n------------------------------------------------------------\n";
         }
